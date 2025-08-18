@@ -1,0 +1,81 @@
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+import seaborn as sns
+from sklearn.model_selection import train_test_split
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, roc_auc_score, roc_curve, confusion_matrix
+from sklearn.datasets import load_breast_cancer
+
+# 1. Carregar o conjunto de dados
+data = load_breast_cancer()
+# Criar um DataFrame para as features (características)
+X = pd.DataFrame(data.data, columns=data.feature_names)
+# Criar uma Series para o alvo (target)
+y = pd.Series(data.target)
+
+# 2. Dividir os dados em conjuntos de treino e teste
+# 70% para treino e 30% para teste, com reprodutibilidade (random_state=42)
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=42)
+
+# 3. Treinar o modelo de machine learning (Random Forest)
+model = RandomForestClassifier(random_state=42)
+model.fit(X_train, y_train)
+
+# 4. Fazer previsões no conjunto de teste
+# Previsões de classe (0 ou 1)
+y_pred = model.predict(X_test)
+# Previsões de probabilidade para a classe positiva (benigno)
+y_prob = model.predict_proba(X_test)[:, 1]
+
+# 5. Calcular as métricas de classificação
+accuracy = accuracy_score(y_test, y_pred)
+precision = precision_score(y_test, y_pred)
+recall = recall_score(y_test, y_pred)
+f1 = f1_score(y_test, y_pred)
+roc_auc = roc_auc_score(y_test, y_prob)
+
+# Calcular a curva ROC para a visualização
+fpr, tpr, thresholds = roc_curve(y_test, y_prob)
+
+# Criar a matriz de confusão
+cm = confusion_matrix(y_test, y_pred)
+
+# 6. Exibir os resultados
+print("--- Métricas de Classificação ---")
+print(f"Acurácia: {accuracy:.4f}")
+print(f"Precisão: {precision:.4f}")
+print(f"Recall: {recall:.4f}")
+print(f"F1-Score: {f1:.4f}")
+print(f"AUC-ROC: {roc_auc:.4f}\n")
+
+# Criar um DataFrame com as métricas para facilitar a visualização
+metrics_df = pd.DataFrame({
+    'Métrica': ['Acurácia', 'Precisão', 'Recall', 'F1-Score', 'AUC-ROC'],
+    'Valor': [accuracy, precision, recall, f1, roc_auc]
+})
+print("--- Tabela de Métricas ---")
+print(metrics_df)
+
+# 7. Gerar e salvar as visualizações
+# Plotar a Matriz de Confusão
+plt.figure(figsize=(8, 6))
+sns.heatmap(cm, annot=True, fmt='d', cmap='Blues', xticklabels=data.target_names, yticklabels=data.target_names)
+plt.title('Matriz de Confusão')
+plt.ylabel('Verdadeiro')
+plt.xlabel('Previsto')
+plt.savefig('confusion_matrix.png')
+print("\nGráfico 'confusion_matrix.png' salvo.")
+
+# Plotar a Curva ROC
+plt.figure(figsize=(8, 6))
+plt.plot(fpr, tpr, color='darkorange', lw=2, label=f'Curva ROC (área = {roc_auc:.2f})')
+plt.plot([0, 1], [0, 1], color='navy', lw=2, linestyle='--')
+plt.xlim([0.0, 1.0])
+plt.ylim([0.0, 1.05])
+plt.xlabel('Taxa de Falsos Positivos')
+plt.ylabel('Taxa de Verdadeiros Positivos')
+plt.title('Curva ROC')
+plt.legend(loc="lower right")
+plt.savefig('roc_curve.png')
+print("Gráfico 'roc_curve.png' salvo.")
